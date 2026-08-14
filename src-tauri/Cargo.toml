@@ -1,0 +1,27 @@
+[package]
+name = "drg-credits"
+version = "0.1.0"
+description = "DRG credits runtime monitor"
+authors = ["local"]
+edition = "2024"
+
+[lib]
+name = "drg_credits_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
+tauri = { version = "2", features = [] }
+tauri-plugin-global-shortcut = "2"
+windows = { version = "0.62", features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_System_Diagnostics_Debug",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_Memory",
+  "Win32_System_Threading"
+] }

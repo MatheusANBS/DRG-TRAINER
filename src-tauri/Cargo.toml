@@ -13,7 +13,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-sha2 = "0.10"
+sha2 = "0.11"
 tauri = { version = "2", features = [] }
 tauri-plugin-global-shortcut = "2"
 windows = { version = "0.62", features = [

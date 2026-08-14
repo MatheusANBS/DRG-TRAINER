@@ -96,3 +96,7 @@ src-tauri/src/
 ## Aviso
 
 Projeto independente, sem associação com Ghost Ship Games ou Coffee Stain Publishing. Deep Rock Galactic e seus elementos pertencem aos respectivos titulares.
+
+## Segurança
+
+Relatórios de segurança devem seguir as orientações de [SECURITY.md](SECURITY.md). Não publique saves, tokens ou dumps completos de memória em issues.

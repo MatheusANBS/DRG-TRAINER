@@ -9,9 +9,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: windows-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -31,6 +36,13 @@ jobs:
 
       - name: Check frontend
         run: npm run build
+
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
+
+      - name: Check Rust formatting
+        working-directory: src-tauri
+        run: cargo fmt --all -- --check
 
       - name: Check Rust backend
         working-directory: src-tauri

@@ -1,8 +1,7 @@
 [package]
 name = "drg-credits"
 version = "0.1.0"
-description = "DRG credits runtime monitor"
-authors = ["local"]
+description = "Runtime trainer for Deep Rock Galactic"
 edition = "2024"
 
 [lib]

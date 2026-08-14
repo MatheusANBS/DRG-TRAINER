@@ -1,6 +1,41 @@
+# JavaScript
 node_modules/
 dist/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Rust / Tauri
 src-tauri/target/
 src-tauri/gen/
-*.pyc
+
+# Release artifacts
+release/
+*.exe
+*.msi
+*.msix
+*.appx
+*.nsis.zip
+
+# Local game data and backups
+*.sav
+DRGTrainerBackups/
+
+# Python reference files
 __pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Environment and local tooling
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+*.log
+
+# Operating system
+.DS_Store
+Thumbs.db
+Desktop.ini

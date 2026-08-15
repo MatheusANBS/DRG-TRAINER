@@ -1,0 +1,59 @@
+# Política de advisories Rust (SPEC-009).
+#
+# Regra: `cargo audit --deny warnings` no CI. Vulnerabilidades **nunca** são
+# ignoradas. As exceções abaixo são exclusivamente advisories informativas
+# (`unmaintained` / `unsound`) que vêm transitivamente do Tauri e que não
+# alcançam o binário distribuído.
+#
+# Cada entrada precisa de: motivo, por que não afeta este projeto, e o gatilho
+# de revisão. Uma exceção sem prazo é uma exceção permanente disfarçada.
+#
+# ┌───────────────────────────────────────────────────────────────────────────┐
+# │ Grupo 1 — bindings GTK3 (gtk-rs)                                          │
+# │ RUSTSEC-2024-0411..0420, RUSTSEC-2024-0429                                │
+# │                                                                           │
+# │ Motivo: o projeto gtk-rs descontinuou as bindings GTK3.                   │
+# │ Por que não afeta: o trainer é Windows-only e usa WebView2. Todo o grupo  │
+# │   GTK entra no Cargo.lock pela árvore Linux do Tauri e nunca é compilado  │
+# │   no target `x86_64-pc-windows-msvc`. `cargo audit` lê o lockfile inteiro,│
+# │   sem filtrar por target.                                                 │
+# │ Revisão: a cada atualização de major/minor do Tauri (a resolução real é   │
+# │   o Tauri migrar para GTK4), e no mínimo a cada 6 meses.                  │
+# │ Próxima revisão: 2027-02-15.                                              │
+# ├───────────────────────────────────────────────────────────────────────────┤
+# │ Grupo 2 — utilitários de macro/parsing sem manutenção                     │
+# │ RUSTSEC-2024-0370, RUSTSEC-2025-0075/0080/0081/0098/0100                  │
+# │                                                                           │
+# │ Motivo: `proc-macro-error` e a família `unic-*` foram arquivados.         │
+# │ Por que não afeta: são dependências de build/macro do Tauri, sem código   │
+# │   em runtime no binário, e nenhuma advisory descreve vulnerabilidade.     │
+# │ Revisão: a cada atualização de major/minor do Tauri; no mínimo 6 meses.   │
+# │ Próxima revisão: 2027-02-15.                                              │
+# └───────────────────────────────────────────────────────────────────────────┘
+#
+# Para revisar o estado atual sem as exceções:
+#   cargo audit            (lista tudo, inclusive o que está ignorado abaixo)
+
+[advisories]
+ignore = [
+  # Grupo 1 — bindings GTK3, Linux-only
+  "RUSTSEC-2024-0411", # gdkwayland-sys
+  "RUSTSEC-2024-0412", # gdk
+  "RUSTSEC-2024-0413", # atk
+  "RUSTSEC-2024-0414", # gdkx11-sys
+  "RUSTSEC-2024-0415", # gtk
+  "RUSTSEC-2024-0416", # atk-sys
+  "RUSTSEC-2024-0417", # gdkx11
+  "RUSTSEC-2024-0418", # gdk-sys
+  "RUSTSEC-2024-0419", # gtk3-macros
+  "RUSTSEC-2024-0420", # gtk-sys
+  "RUSTSEC-2024-0429", # glib — unsound em VariantStrIter (API não usada, Linux-only)
+
+  # Grupo 2 — utilitários de macro/parsing sem manutenção
+  "RUSTSEC-2024-0370", # proc-macro-error
+  "RUSTSEC-2025-0075", # unic-char-range
+  "RUSTSEC-2025-0080", # unic-common
+  "RUSTSEC-2025-0081", # unic-char-property
+  "RUSTSEC-2025-0098", # unic-ucd-version
+  "RUSTSEC-2025-0100", # unic-ucd-ident
+]

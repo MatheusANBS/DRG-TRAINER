@@ -1,11 +1,11 @@
-import { Gauge, Info, Keyboard, Zap } from "lucide-react";
+import { Info, Keyboard, type LucideIcon, Zap } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { ClipStatus, ConnectionState, DamageStatus } from "@/types/trainer";
+import { displayHotkey, keyboardEventToShortcut } from "@/lib/weapon-format";
 
 export function TrainerSection({
   icon: Icon,
@@ -13,7 +13,7 @@ export function TrainerSection({
   children,
   compact,
 }: {
-  icon: typeof Gauge;
+  icon: LucideIcon;
   title: string;
   children: ReactNode;
   compact?: boolean;
@@ -36,7 +36,7 @@ export function OptionRow({
   children,
   active,
 }: {
-  icon: typeof Gauge;
+  icon: LucideIcon;
   title: string;
   info: string;
   children: ReactNode;
@@ -45,21 +45,21 @@ export function OptionRow({
   return (
     <div className={cn("option-row", active && "option-row-active")}>
       <div className="option-name">
-        <Icon className="size-3 text-muted-foreground" />
+        <Icon className="size-3 text-muted-foreground" aria-hidden />
         <span>{title}</span>
-        <OptionInfo text={info} />
+        <OptionInfo text={info} label={title} />
       </div>
       <div className="option-controls">{children}</div>
     </div>
   );
 }
 
-function OptionInfo({ text }: { text: string }) {
+function OptionInfo({ text, label }: { text: string; label: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button type="button" className="info-trigger" aria-label="More information">
-          <Info className="size-3" />
+        <button type="button" className="info-trigger" aria-label={`About ${label}`}>
+          <Info className="size-3" aria-hidden />
         </button>
       </TooltipTrigger>
       <TooltipContent side="top" sideOffset={7} className="trainer-tooltip max-w-64 leading-relaxed">
@@ -72,12 +72,12 @@ function OptionInfo({ text }: { text: string }) {
 export function HotkeyButton({
   value,
   busy,
-  label = "Infinite Magazine",
+  label,
   onCapture,
 }: {
   value: string;
   busy: boolean;
-  label?: string;
+  label: string;
   onCapture: (hotkey: string) => Promise<void>;
 }) {
   const [recording, setRecording] = useState(false);
@@ -105,9 +105,10 @@ export function HotkeyButton({
           disabled={busy}
           onClick={() => setRecording(true)}
           onKeyDown={handleKeyDown}
+          onBlur={() => setRecording(false)}
           aria-label={`Configure ${label} hotkey`}
         >
-          <Keyboard className="size-3" />
+          <Keyboard className="size-3" aria-hidden />
           {recording ? "Press keys" : displayHotkey(value)}
         </button>
       </TooltipTrigger>
@@ -123,7 +124,7 @@ export function HotkeyButton({
 export function DisabledOption({ title, info }: { title: string; info: string }) {
   return (
     <OptionRow icon={Zap} title={title} info={info}>
-      <Badge variant="outline" className="text-[8px] font-normal text-muted-foreground">
+      <Badge variant="outline" className="badge-meta font-normal text-muted-foreground">
         Not mapped
       </Badge>
       <Switch disabled aria-label={`${title} unavailable`} />
@@ -142,45 +143,4 @@ export function ValuePair({ label, value, wide }: { label: string; value: string
 
 export function StatePill({ active, label }: { active: boolean; label: string }) {
   return <span className={cn("state-pill", active && "state-pill-active")}>{label}</span>;
-}
-
-export function StatusDot({ state }: { state: ConnectionState }) {
-  const color = state === "connected" ? "bg-emerald-400" : state === "error" ? "bg-red-400" : "bg-amber-400";
-  return <span className={cn("size-1.5 rounded-full", color)} />;
-}
-
-export function cleanWeaponName(name: string) {
-  return name.replace(/^WPN_/, "").replace(/_C$/, "").replaceAll("_", " ");
-}
-
-export function formatClip(clip: ClipStatus | null) {
-  if (clip?.clipCount == null || clip.clipSize == null) return "-- / --";
-  return `${clip.clipCount} / ${clip.clipSize}`;
-}
-
-export function formatDamage(damage: DamageStatus | null) {
-  if (!damage?.available || damage.value == null) return "--";
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(damage.value);
-}
-
-function displayHotkey(value: string) {
-  return value.replaceAll("Control", "Ctrl").replaceAll("+", " + ");
-}
-
-function keyboardEventToShortcut(event: KeyboardEvent<HTMLButtonElement>) {
-  if (["Control", "Shift", "Alt", "Meta"].includes(event.key)) return null;
-  const modifiers: string[] = [];
-  if (event.ctrlKey) modifiers.push("Control");
-  if (event.altKey) modifiers.push("Alt");
-  if (event.shiftKey) modifiers.push("Shift");
-  if (event.metaKey) modifiers.push("Super");
-
-  let key: string;
-  if (/^F([1-9]|1[0-2])$/.test(event.key)) key = event.key;
-  else if (/^Key[A-Z]$/.test(event.code)) key = event.code.slice(3);
-  else if (/^Digit[0-9]$/.test(event.code)) key = event.code.slice(5);
-  else return null;
-
-  if (!key.startsWith("F") && modifiers.length === 0) return null;
-  return [...modifiers, key].join("+");
 }

@@ -1,74 +1,221 @@
-import { Crosshair, Infinity as InfinityIcon, KeyRound, Loader2, Sparkles, Wrench, Zap } from "lucide-react";
+import {
+  Crosshair,
+  Infinity as InfinityIcon,
+  KeyRound,
+  Sparkles,
+  Wrench,
+  Zap,
+} from "lucide-react";
 
-import { cleanWeaponName, DisabledOption, formatClip, formatDamage, HotkeyButton, OptionRow, StatePill, TrainerSection, ValuePair } from "@/components/trainer/primitives";
-import { Button } from "@/components/ui/button";
+import { ActionControl, SemanticsBadge } from "@/components/trainer/action-control";
+import {
+  DisabledOption,
+  HotkeyButton,
+  OptionRow,
+  StatePill,
+  TrainerSection,
+  ValuePair,
+} from "@/components/trainer/primitives";
+import {
+  NO_VALUE,
+  cleanWeaponName,
+  formatClip,
+  formatDamage,
+} from "@/lib/weapon-format";
 import { Switch } from "@/components/ui/switch";
-import type { ClipStatus, CreditSnapshot, DamageStatus } from "@/types/trainer";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { ProgressionActions } from "@/hooks/useProgressionActions";
+import type { TrainerHotkeys } from "@/hooks/useTrainerHotkeys";
+import type { WeaponRuntime } from "@/hooks/useWeaponRuntime";
+import type { ClipStatus, DamageStatus } from "@/types/trainer";
 
 type WeaponsSectionProps = {
   compact: boolean;
-  snapshot: CreditSnapshot | null;
   clip: ClipStatus | null;
   damage: DamageStatus | null;
-  togglingClip: boolean;
-  togglingDamage: boolean;
-  clipHotkey: string;
-  damageHotkey: string;
-  hotkeyBusy: boolean;
-  damageHotkeyBusy: boolean;
-  unlocking: boolean;
-  gearBusy: boolean;
-  schematicBusy: boolean;
-  onToggleClip: (enabled: boolean) => void;
-  onToggleDamage: (enabled: boolean) => void;
-  onClipHotkey: (hotkey: string) => Promise<void>;
-  onDamageHotkey: (hotkey: string) => Promise<void>;
-  onUnlockWeapons: () => void;
-  onUnlockGear: () => void;
-  onUnlockSchematics: () => void;
+  runtime: WeaponRuntime;
+  hotkeys: TrainerHotkeys;
+  progression: ProgressionActions;
 };
 
-export function WeaponsSection(props: WeaponsSectionProps) {
-  const { compact, snapshot, clip, damage } = props;
+/** Switch com explicação obrigatória quando está desabilitado (SPEC-019). */
+function RuntimeToggle({
+  checked,
+  disabled,
+  blockedReason,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  blockedReason: string | null;
+  label: string;
+  onChange: (enabled: boolean) => void;
+}) {
+  const control = (
+    <Switch
+      checked={checked}
+      disabled={disabled}
+      onCheckedChange={onChange}
+      aria-label={`Toggle ${label}`}
+    />
+  );
+  if (!blockedReason) return control;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex">{control}</span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="trainer-tooltip max-w-64">
+        {blockedReason}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+export function WeaponsSection({
+  compact,
+  clip,
+  damage,
+  runtime,
+  hotkeys,
+  progression,
+}: WeaponsSectionProps) {
+  const weaponName = damage?.weaponName ?? clip?.weaponName;
+
   return (
     <TrainerSection icon={Crosshair} title="Weapons" compact={compact}>
       <div className="option-grid">
-        <OptionRow icon={InfinityIcon} title="Infinite Magazine" info="Follows EquippedActor and keeps ClipCount equal to ClipSize every 35 ms. Reserve ammunition is not changed." active={clip?.enabled}>
-          <StatePill active={clip?.enabled ?? false} label={clip?.enabled ? "On" : "Off"} />
-          <Switch checked={clip?.enabled ?? false} disabled={props.togglingClip} onCheckedChange={props.onToggleClip} aria-label="Toggle Infinite Magazine" />
-          <HotkeyButton value={props.clipHotkey} busy={props.hotkeyBusy} onCapture={props.onClipHotkey} />
+        <OptionRow
+          icon={InfinityIcon}
+          title="Infinite Magazine"
+          info="Follows EquippedActor and keeps ClipCount equal to ClipSize every 35 ms. Reserve ammunition is not changed. Turning it off restores the game's own behaviour."
+          active={runtime.clipEnabled}
+        >
+          <StatePill active={runtime.clipEnabled} label={runtime.clipEnabled ? "On" : "Off"} />
+          <RuntimeToggle
+            checked={runtime.clipEnabled}
+            disabled={runtime.togglingClip || runtime.clipBlocked !== null}
+            blockedReason={runtime.clipBlocked}
+            label="Infinite Magazine"
+            onChange={runtime.toggleClip}
+          />
+          <HotkeyButton
+            value={hotkeys.clipHotkey}
+            busy={hotkeys.clipBusy}
+            label="Infinite Magazine"
+            onCapture={hotkeys.saveClipHotkey}
+          />
         </OptionRow>
-        <OptionRow icon={Zap} title="Weapon Damage" info="Follows the equipped weapon through Unreal reflection and keeps active direct or radial DamageComponent fields at 9999. Hitscan and projectile class defaults are resolved automatically." active={damage?.enabled}>
-          <ValuePair label="Damage" value={damage?.enabled ? "9,999" : formatDamage(damage)} />
-          <StatePill active={damage?.enabled ?? false} label={damage?.enabled ? "On" : "Off"} />
-          <Switch checked={damage?.enabled ?? false} disabled={props.togglingDamage || (damage != null && !damage.available && !damage.enabled)} onCheckedChange={props.onToggleDamage} aria-label="Toggle Weapon Damage" />
-          <HotkeyButton value={props.damageHotkey} busy={props.damageHotkeyBusy} label="Weapon Damage" onCapture={props.onDamageHotkey} />
+
+        <OptionRow
+          icon={Zap}
+          title="Weapon Damage"
+          info="Follows the equipped weapon through Unreal reflection and keeps active direct or radial DamageComponent fields at 9999. Hitscan and projectile class defaults are resolved automatically."
+          active={runtime.damageEnabled}
+        >
+          <ValuePair
+            label="Damage"
+            value={runtime.damageEnabled ? "9,999" : formatDamage(damage)}
+          />
+          <StatePill active={runtime.damageEnabled} label={runtime.damageEnabled ? "On" : "Off"} />
+          <RuntimeToggle
+            checked={runtime.damageEnabled}
+            disabled={
+              runtime.togglingDamage ||
+              runtime.damageBlocked !== null ||
+              (damage != null && !damage.available && !runtime.damageEnabled)
+            }
+            blockedReason={
+              runtime.damageBlocked ??
+              (damage != null && !damage.available && !runtime.damageEnabled
+                ? damage.message
+                : null)
+            }
+            label="Weapon Damage"
+            onChange={runtime.toggleDamage}
+          />
+          <HotkeyButton
+            value={hotkeys.damageHotkey}
+            busy={hotkeys.damageBusy}
+            label="Weapon Damage"
+            onCapture={hotkeys.saveDamageHotkey}
+          />
         </OptionRow>
-        <OptionRow icon={Crosshair} title="Equipped weapon" info="Resolved dynamically through PlayerController → Pawn → InventoryComponent → EquippedActor.">
-          <ValuePair label="Weapon" value={(damage?.weaponName ?? clip?.weaponName) ? cleanWeaponName((damage?.weaponName ?? clip?.weaponName)!) : "--"} />
+
+        <OptionRow
+          icon={Crosshair}
+          title="Equipped weapon"
+          info="Resolved dynamically through PlayerController → Pawn → InventoryComponent → EquippedActor."
+        >
+          <ValuePair
+            label="Weapon"
+            value={weaponName ? cleanWeaponName(weaponName) : NO_VALUE}
+          />
           <ValuePair label="Clip" value={formatClip(clip)} />
-          <ValuePair label="Damage fields" value={damage?.available ? String(damage.targetCount) : "--"} />
+          <ValuePair
+            label="Damage fields"
+            value={damage?.available ? String(damage.targetCount) : NO_VALUE}
+          />
         </OptionRow>
-        <OptionRow icon={KeyRound} title="Unlock All Weapons" info="Permanently unlocks all 26 primary and secondary weapons through the game's native routine. Space Rig only. A save backup is created first.">
-          <StatePill active={false} label="Permanent" />
-          <Button type="button" size="xs" disabled={!snapshot || props.unlocking} onClick={props.onUnlockWeapons}>
-            {props.unlocking ? <Loader2 className="animate-spin" /> : <KeyRound />}{props.unlocking ? "Unlocking" : "Unlock all"}
-          </Button>
+
+        <OptionRow
+          icon={KeyRound}
+          title="Unlock All Weapons"
+          info="Permanently unlocks all 26 primary and secondary weapons through the game's native routine. Space Rig only. A save backup is created first."
+        >
+          <SemanticsBadge semantics="persistent" />
+          <ActionControl
+            action={progression.weapons}
+            semantics="persistent"
+            label="Unlock all"
+            pendingLabel="Unlocking"
+            icon={KeyRound}
+            onActivate={() => progression.setConfirming("weapons")}
+          />
         </OptionRow>
-        <OptionRow icon={Wrench} title="Unlock All Gear Modifications" info="Permanently acquires every purchasable weapon and equipment modification through Cheat_UnlockAllUpgrades. Equipped builds are preserved. Space Rig only; a save backup is created first.">
-          <StatePill active={false} label="Permanent" />
-          <Button type="button" size="xs" disabled={!snapshot || props.gearBusy} onClick={props.onUnlockGear}>
-            {props.gearBusy ? <Loader2 className="animate-spin" /> : <Wrench />}{props.gearBusy ? "Unlocking" : "Unlock mods"}
-          </Button>
+
+        <OptionRow
+          icon={Wrench}
+          title="Unlock All Gear Modifications"
+          info="Permanently acquires every purchasable weapon and equipment modification through Cheat_UnlockAllUpgrades. Equipped builds are preserved. Space Rig only; a save backup is created first."
+        >
+          <SemanticsBadge semantics="persistent" />
+          <ActionControl
+            action={progression.gear}
+            semantics="persistent"
+            label="Unlock mods"
+            pendingLabel="Unlocking"
+            icon={Wrench}
+            onActivate={() => progression.setConfirming("gear")}
+          />
         </OptionRow>
-        <OptionRow icon={Sparkles} title="Unlock All Overclocks & Cosmetics" info="Permanently grants every weapon overclock, skin, vanity cosmetic and victory pose, including repair of schematics already marked as forged. The unsafe analytics path is bypassed. Space Rig only; a save backup is created first.">
-          <StatePill active={false} label="Permanent" />
-          <Button type="button" size="xs" disabled={!snapshot || props.schematicBusy} onClick={props.onUnlockSchematics}>
-            {props.schematicBusy ? <Loader2 className="animate-spin" /> : <Sparkles />}{props.schematicBusy ? "Unlocking" : "Unlock all"}
-          </Button>
+
+        <OptionRow
+          icon={Sparkles}
+          title="Unlock All Overclocks & Cosmetics"
+          info="Permanently grants every weapon overclock, skin, vanity cosmetic and victory pose, including repair of schematics already marked as forged. The unsafe analytics path is bypassed. Space Rig only; a save backup is created first."
+        >
+          <SemanticsBadge semantics="persistent" />
+          <ActionControl
+            action={progression.schematics}
+            semantics="persistent"
+            label="Unlock all"
+            pendingLabel="Unlocking"
+            icon={Sparkles}
+            onActivate={() => progression.setConfirming("schematics")}
+          />
         </OptionRow>
       </div>
-      {!compact && <div className="option-grid option-grid-border"><DisabledOption title="Reserve ammunition" info="AmmoCount monitoring and an independent freeze will be mapped here." /></div>}
+
+      {!compact && (
+        <div className="option-grid option-grid-border">
+          <DisabledOption
+            title="Reserve ammunition"
+            info="AmmoCount monitoring and an independent freeze will be mapped here."
+          />
+        </div>
+      )}
     </TrainerSection>
   );
 }

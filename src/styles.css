@@ -5,26 +5,85 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Design system do trainer (SPEC-014).
+ *
+ * A interface é densa por escolha, não por acidente: tudo o que importa precisa
+ * caber em 940x660 sem rolagem. O que este arquivo formaliza é o *piso* — nenhum
+ * texto funcional abaixo de 9px, controles com alvo mínimo utilizável e foco
+ * sempre visível — para que a densidade não vire ilegibilidade em 1080p com
+ * scaling do Windows.
+ *
+ * Regra prática: use os tokens. Um valor mágico repetido é o começo de uma
+ * escala paralela.
+ */
 :root {
+  /* Paleta: carvão, cinza quente, âmbar e verde. */
   --background: oklch(0.13 0.008 75);
-  --foreground: oklch(0.92 0.008 85);
+  --foreground: oklch(0.93 0.008 85);
   --card: oklch(0.165 0.008 75);
-  --card-foreground: oklch(0.92 0.008 85);
+  --card-foreground: oklch(0.93 0.008 85);
   --popover: oklch(0.19 0.008 85);
-  --popover-foreground: oklch(0.92 0.008 85);
+  --popover-foreground: oklch(0.93 0.008 85);
   --primary: oklch(0.78 0.145 76);
   --primary-foreground: oklch(0.18 0.02 82);
   --secondary: oklch(0.23 0.008 85);
-  --secondary-foreground: oklch(0.9 0.008 85);
+  --secondary-foreground: oklch(0.91 0.008 85);
   --muted: oklch(0.215 0.006 85);
-  --muted-foreground: oklch(0.63 0.008 85);
+  /* Subido de 0.63: textos de 9-10px precisam de mais contraste que rótulos. */
+  --muted-foreground: oklch(0.69 0.008 85);
   --accent: oklch(0.25 0.012 82);
-  --accent-foreground: oklch(0.92 0.008 85);
+  --accent-foreground: oklch(0.93 0.008 85);
   --destructive: oklch(0.64 0.2 25);
-  --border: oklch(0.285 0.01 75);
-  --input: oklch(0.285 0.01 75);
-  --ring: oklch(0.72 0.1 82);
+  --border: oklch(0.29 0.01 75);
+  --input: oklch(0.29 0.01 75);
+  --ring: oklch(0.78 0.12 82);
   --radius: 0.5rem;
+
+  /* Cores semânticas de estado. Vermelho é reservado a erro (SPEC-015). */
+  --state-ok: oklch(0.76 0.13 155);
+  --state-ok-surface: oklch(0.63 0.14 155 / 0.08);
+  --state-ok-border: oklch(0.63 0.14 155 / 0.32);
+  --state-warning: oklch(0.82 0.13 78);
+  --state-warning-surface: oklch(0.78 0.145 76 / 0.09);
+  --state-warning-border: oklch(0.78 0.145 76 / 0.34);
+  --state-error: oklch(0.74 0.15 32);
+  --state-error-surface: oklch(0.64 0.2 25 / 0.08);
+  --state-error-border: oklch(0.64 0.2 25 / 0.3);
+  --state-idle: oklch(0.6 0.008 75);
+
+  /* Escala tipográfica. Piso de 9px para qualquer texto funcional. */
+  --text-meta-sm: 9px;   /* rótulos secundários (ex.: "ADDRESS") */
+  --text-meta: 10px;     /* metadados, pills, hotkeys, botões */
+  --text-section: 11px;  /* títulos de seção */
+  --text-option: 12px;   /* nome da opção — o texto mais lido da tela */
+  --text-value: 13px;    /* valor principal (créditos) */
+  --leading-tight: 1.25;
+  --leading-normal: 1.45;
+
+  /* Escala de espaçamento (múltiplos de 2px). */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 18px;
+
+  /* Alturas de controle: alvo mínimo utilizável sem inflar a densidade. */
+  --control-height: 26px;
+  --row-min-height: 50px;
+
+  /* Raios. */
+  --radius-control: 4px;
+  --radius-surface: 6px;
+
+  /* Superfícies e linhas recorrentes. */
+  --surface-section: oklch(0.155 0.006 75 / 0.72);
+  --surface-raised: oklch(0.19 0.007 75);
+  --line-subtle: oklch(0.23 0.008 75);
+  --line-strong: oklch(0.26 0.008 75);
 }
 
 @theme inline {
@@ -57,7 +116,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
 
   html,
@@ -69,7 +128,8 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    min-width: 320px;
+    /* Alinhado ao minWidth da janela Tauri (SPEC-018). */
+    min-width: 760px;
   }
 
   button {
@@ -85,58 +145,122 @@
     font: inherit;
   }
 
+  /* Foco sempre visível, inclusive sobre superfícies claras (SPEC-014). */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-control);
+  }
+
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
     appearance: none;
     margin: 0;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer components {
-  .logo-mark {
-    border-color: oklch(0.78 0.145 76 / 0.45);
-    background: oklch(0.78 0.145 76 / 0.08);
-    color: oklch(0.82 0.14 76);
-  }
-
+  /*
+   * Identidade (SPEC-017): painel industrial + ferramenta de engenharia.
+   * O reforço é feito com hachura discreta, faixa de aviso fina e marca
+   * monoespaçada — nada que compita com os controles.
+   */
   .dense-trainer {
-    min-width: 720px;
+    min-width: 760px;
+    background-color: var(--background);
     background-image:
       radial-gradient(circle at 50% -15%, oklch(0.28 0.04 70 / 0.13), transparent 34%),
-      linear-gradient(to bottom, oklch(0.15 0.007 75), var(--background) 110px);
+      linear-gradient(to bottom, oklch(0.15 0.007 75), var(--background) 140px);
   }
 
-  .trainer-topbar {
+  .trainer-header {
     position: sticky;
     top: 0;
     z-index: 20;
-    display: flex;
-    height: 48px;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
     border-bottom: 1px solid var(--border);
-    background: oklch(0.135 0.007 75 / 0.94);
-    padding: 0 14px;
+    background: oklch(0.135 0.007 75 / 0.95);
     backdrop-filter: blur(14px);
+  }
+
+  /* Faixa de aviso industrial: 2px, baixa saturação, puramente decorativa. */
+  .trainer-header::after {
+    content: "";
+    display: block;
+    height: 2px;
+    background-image: repeating-linear-gradient(
+      135deg,
+      oklch(0.78 0.145 76 / 0.22) 0 6px,
+      transparent 6px 12px
+    );
+  }
+
+  .trainer-topbar {
+    display: flex;
+    height: 44px;
+    align-items: center;
+    gap: var(--space-6);
+    padding: 0 var(--space-7);
+  }
+
+  .trainer-brand {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .logo-mark {
+    display: grid;
+    height: 26px;
+    width: 26px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid oklch(0.78 0.145 76 / 0.45);
+    border-radius: var(--radius-control);
+    background: oklch(0.78 0.145 76 / 0.08);
+    color: oklch(0.84 0.14 76);
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  .trainer-wordmark {
+    overflow: hidden;
+    color: var(--muted-foreground);
+    font-size: var(--text-meta);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .module-tabs {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: var(--space-1);
   }
 
   .module-tab {
     display: inline-flex;
     height: 28px;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-3);
     border: 1px solid transparent;
     border-radius: 5px;
-    padding: 0 10px;
+    padding: 0 var(--space-5);
     color: var(--muted-foreground);
-    font-size: 10px;
+    font-size: var(--text-meta);
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -155,33 +279,103 @@
     box-shadow: inset 0 1px oklch(0.4 0.02 75 / 0.2);
   }
 
+  /*
+   * Status operacional (SPEC-016). Duas linhas fixas: chips de estado e
+   * detalhe. A terceira linha só aparece quando há motivo de bloqueio.
+   */
+  .trainer-status {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    border-top: 1px solid var(--line-subtle);
+    padding: var(--space-3) var(--space-7);
+  }
+
+  .trainer-status-row {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .status-chip {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: var(--space-3);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-control);
+    background: var(--surface-raised);
+    padding: 3px var(--space-4);
+    color: var(--state-idle);
+    font-size: var(--text-meta);
+    font-weight: 700;
+    letter-spacing: 0.07em;
+  }
+
+  .status-chip-ok {
+    border-color: var(--state-ok-border);
+    background: var(--state-ok-surface);
+    color: var(--state-ok);
+  }
+
+  .status-chip-warning {
+    border-color: var(--state-warning-border);
+    background: var(--state-warning-surface);
+    color: var(--state-warning);
+  }
+
+  .trainer-status-detail {
+    flex: 1 1 auto;
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--muted-foreground);
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    line-height: var(--leading-tight);
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .trainer-status-warning {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    color: var(--state-warning);
+    font-size: var(--text-meta-sm);
+    line-height: var(--leading-tight);
+  }
+
   .trainer-content {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 10px 12px 18px;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--space-6) var(--space-8);
   }
 
   .trainer-section {
     overflow: hidden;
-    border: 1px solid oklch(0.25 0.008 75);
-    border-radius: 6px;
-    background: oklch(0.155 0.006 75 / 0.72);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-surface);
+    background: var(--surface-section);
     box-shadow: 0 8px 28px rgb(0 0 0 / 0.08);
   }
 
   .section-heading {
     display: flex;
-    height: 34px;
+    height: 32px;
     align-items: center;
-    gap: 8px;
-    border-bottom: 1px solid oklch(0.25 0.008 75);
-    padding: 0 12px;
-    color: oklch(0.75 0.01 75);
+    gap: var(--space-4);
+    border-bottom: 1px solid var(--line-strong);
+    padding: 0 var(--space-6);
+    color: oklch(0.78 0.01 75);
   }
 
   .section-heading h2 {
-    font-size: 10px;
+    font-size: var(--text-section);
     font-weight: 650;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -193,22 +387,22 @@
   }
 
   .option-grid-border {
-    border-top: 1px solid oklch(0.23 0.008 75);
+    border-top: 1px solid var(--line-subtle);
   }
 
   .option-row {
     display: flex;
     min-width: 0;
-    min-height: 50px;
+    min-height: var(--row-min-height);
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    padding: 8px 13px;
+    gap: var(--space-6);
+    padding: var(--space-4) var(--space-6);
     transition: background 120ms ease;
   }
 
   .option-row:nth-child(odd) {
-    border-right: 1px solid oklch(0.23 0.008 75);
+    border-right: 1px solid var(--line-subtle);
   }
 
   .option-row:hover {
@@ -228,15 +422,16 @@
 
   .option-name {
     flex: 1 1 auto;
-    gap: 7px;
-    font-size: 11px;
-    font-weight: 570;
+    gap: var(--space-3);
+    font-size: var(--text-option);
+    font-weight: 560;
+    line-height: var(--leading-tight);
   }
 
   .option-controls {
     flex: 0 1 auto;
     justify-content: flex-end;
-    gap: 8px;
+    gap: var(--space-4);
   }
 
   .info-trigger {
@@ -244,7 +439,7 @@
     flex: 0 0 auto;
     place-items: center;
     border-radius: 50%;
-    color: oklch(0.59 0.008 75);
+    color: oklch(0.62 0.008 75);
     transition: color 120ms ease;
   }
 
@@ -254,87 +449,116 @@
   }
 
   .option-value {
-    min-width: 68px;
+    min-width: 72px;
     text-align: right;
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: var(--text-value);
     font-weight: 600;
   }
 
   .value-pair {
     display: flex;
-    max-width: 130px;
-    min-width: 46px;
+    max-width: 132px;
+    min-width: 48px;
     flex-direction: column;
     align-items: flex-end;
-    line-height: 1.15;
+    line-height: var(--leading-tight);
   }
 
   .value-pair small {
     color: var(--muted-foreground);
-    font-size: 7px;
-    letter-spacing: 0.08em;
+    font-size: var(--text-meta-sm);
+    letter-spacing: 0.07em;
     text-transform: uppercase;
   }
 
   .value-pair strong {
     overflow: hidden;
     max-width: 100%;
-    margin-top: 3px;
+    margin-top: var(--space-1);
     font-family: var(--font-mono);
-    font-size: 9px;
+    font-size: var(--text-meta);
     font-weight: 500;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .value-pair-wide {
-    max-width: 150px;
+    max-width: 152px;
   }
 
   .state-pill {
-    min-width: 34px;
-    border: 1px solid oklch(0.27 0.008 75);
-    border-radius: 4px;
-    background: oklch(0.19 0.006 75);
-    padding: 3px 7px;
+    min-width: 36px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-control);
+    background: var(--surface-raised);
+    padding: 3px var(--space-4);
     color: var(--muted-foreground);
-    font-size: 8px;
+    font-size: var(--text-meta-sm);
     font-weight: 600;
     text-align: center;
     text-transform: uppercase;
   }
 
   .state-pill-active {
-    border-color: oklch(0.63 0.14 155 / 0.3);
-    background: oklch(0.63 0.14 155 / 0.08);
-    color: oklch(0.76 0.13 155);
+    border-color: var(--state-ok-border);
+    background: var(--state-ok-surface);
+    color: var(--state-ok);
+  }
+
+  /*
+   * Semântica de ação (SPEC-015). `PERMANENT` usa âmbar reforçado — a cor
+   * "atenção" da paleta — e nunca vermelho, que fica reservado a erro.
+   */
+  .semantics-badge {
+    flex: 0 0 auto;
+    border: 1px solid var(--state-warning-border);
+    border-radius: 3px;
+    background: var(--state-warning-surface);
+    padding: 2px var(--space-3);
+    color: var(--state-warning);
+    font-size: var(--text-meta-sm);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  .action-control {
+    font-size: var(--text-meta);
+  }
+
+  .action-control-persistent:not(:disabled) {
+    box-shadow: inset 0 0 0 1px oklch(0.78 0.145 76 / 0.35);
+  }
+
+  .badge-meta {
+    font-size: var(--text-meta-sm);
   }
 
   .hotkey-button {
     display: inline-flex;
-    min-width: 42px;
-    height: 24px;
+    min-width: 48px;
+    height: var(--control-height);
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    border: 1px solid oklch(0.28 0.009 75);
-    border-radius: 4px;
-    background: oklch(0.19 0.007 75);
-    padding: 0 7px;
-    color: oklch(0.71 0.008 75);
+    gap: var(--space-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-control);
+    background: var(--surface-raised);
+    padding: 0 var(--space-4);
+    color: oklch(0.74 0.008 75);
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: var(--text-meta);
     white-space: nowrap;
   }
 
-  .hotkey-button:hover {
+  .hotkey-button:hover:not(:disabled) {
     border-color: oklch(0.42 0.02 75);
     color: var(--foreground);
   }
 
   .hotkey-recording {
-    min-width: 74px;
+    min-width: 82px;
     border-color: oklch(0.78 0.145 76 / 0.65);
     color: var(--primary);
     box-shadow: 0 0 0 2px oklch(0.78 0.145 76 / 0.08);
@@ -343,67 +567,111 @@
   .inline-editor {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-3);
   }
 
   .inline-editor input {
-    width: 108px;
-    height: 27px;
-    border-radius: 4px;
+    width: 112px;
+    height: var(--control-height);
+    border-radius: var(--radius-control);
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--text-meta);
   }
 
   .resource-editor {
     display: flex;
     min-width: 0;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-3);
   }
 
   .resource-editor input {
-    width: 76px;
-    height: 27px;
-    border-radius: 4px;
+    width: 80px;
+    height: var(--control-height);
+    border-radius: var(--radius-control);
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--text-meta);
   }
 
   .resource-select {
-    width: 154px;
-    height: 27px;
-    border-radius: 4px;
-    font-size: 10px;
+    width: 156px;
+    height: var(--control-height);
+    border-radius: var(--radius-control);
+    font-size: var(--text-meta);
   }
 
   .resource-editor-all input {
-    width: 96px;
+    width: 100px;
   }
 
-  .trainer-error,
-  .trainer-toast {
+  /* Feed de resultado (SPEC-019). */
+  .trainer-feed {
     display: flex;
-    min-height: 30px;
-    align-items: center;
-    gap: 6px;
-    border: 1px solid oklch(0.56 0.12 55 / 0.25);
-    border-radius: 5px;
-    background: oklch(0.56 0.12 55 / 0.06);
-    padding: 6px 10px;
-    color: oklch(0.76 0.1 65);
-    font-size: 9px;
+    flex-direction: column;
+    gap: var(--space-3);
   }
 
-  .trainer-toast {
-    border-color: oklch(0.63 0.14 155 / 0.25);
-    background: oklch(0.63 0.14 155 / 0.06);
-    color: oklch(0.76 0.13 155);
+  .trainer-note {
+    display: flex;
+    min-height: 32px;
+    align-items: flex-start;
+    gap: var(--space-3);
+    border: 1px solid var(--line-strong);
+    border-radius: 5px;
+    background: var(--surface-raised);
+    padding: var(--space-3) var(--space-5);
+    font-size: var(--text-meta);
+    line-height: var(--leading-normal);
+  }
+
+  .trainer-note-success {
+    border-color: var(--state-ok-border);
+    background: var(--state-ok-surface);
+    color: var(--state-ok);
+  }
+
+  .trainer-note-error {
+    border-color: var(--state-error-border);
+    background: var(--state-error-surface);
+    color: var(--state-error);
+  }
+
+  .trainer-note-body {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .trainer-note-body small {
+    overflow: hidden;
+    color: var(--muted-foreground);
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .trainer-note-dismiss {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 3px;
+    color: inherit;
+    opacity: 0.65;
+    transition: opacity 120ms ease;
+  }
+
+  .trainer-note-dismiss:hover {
+    opacity: 1;
   }
 
   .trainer-tooltip {
-    border: 1px solid oklch(0.31 0.01 75) !important;
+    border: 1px solid oklch(0.32 0.01 75) !important;
     background: oklch(0.19 0.008 75) !important;
     color: var(--foreground) !important;
+    font-size: var(--text-meta) !important;
     box-shadow: 0 12px 35px rgb(0 0 0 / 0.38);
   }
 
@@ -412,7 +680,41 @@
     fill: oklch(0.19 0.008 75);
   }
 
-  @media (max-width: 700px) {
+  /*
+   * Responsividade (SPEC-018). O breakpoint anterior era 700px, abaixo do
+   * minWidth de 760px da janela — ou seja, nunca era alcançado. 820px é a
+   * primeira largura em que duas colunas de opções começam a apertar com a
+   * tipografia atual, incluindo 125% de scaling do Windows.
+   */
+  @media (max-width: 820px) {
+    .trainer-topbar {
+      padding: 0 var(--space-5);
+    }
+
+    .trainer-wordmark {
+      display: none;
+    }
+
+    .trainer-status {
+      padding: var(--space-3) var(--space-5);
+    }
+
+    /* Sem largura para os três na mesma linha, o detalhe desce e volta a
+       alinhar à esquerda. */
+    .trainer-status-row {
+      flex-wrap: wrap;
+    }
+
+    .trainer-status-detail {
+      flex-basis: 100%;
+      text-align: left;
+    }
+
+    .trainer-content {
+      gap: var(--space-3);
+      padding: var(--space-4) var(--space-4) var(--space-7);
+    }
+
     .option-grid {
       grid-template-columns: 1fr;
     }
@@ -422,11 +724,17 @@
     }
 
     .option-row + .option-row {
-      border-top: 1px solid oklch(0.23 0.008 75);
+      border-top: 1px solid var(--line-subtle);
     }
 
     .resource-editor {
       flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: var(--space-2);
+    }
+
+    .value-pair {
+      max-width: 118px;
     }
   }
 }

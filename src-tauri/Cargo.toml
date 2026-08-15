@@ -8,6 +8,12 @@ edition = "2024"
 name = "drg_credits_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[features]
+default = []
+# Testes que exigem o DRG em execucao na build suportada. Ficam fora do
+# `cargo test` padrao para que o CI rode sem o jogo instalado (SPEC-006).
+live-tests = []
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -24,3 +30,6 @@ windows = { version = "0.62", features = [
   "Win32_System_Memory",
   "Win32_System_Threading"
 ] }
+
+[dev-dependencies]
+serde_json = "1"

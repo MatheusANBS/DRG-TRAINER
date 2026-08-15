@@ -1,7 +1,12 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capabilities for the main window",
+  "description": "Permissoes minimas da janela principal. Cada entrada abaixo tem justificativa em SECURITY.md; adicionar uma permissao exige revisao explicita (SPEC-010).",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:app:default",
+    "core:event:default",
+    "core:window:default",
+    "core:webview:default"
+  ]
 }

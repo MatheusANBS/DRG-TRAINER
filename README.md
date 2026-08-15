@@ -33,13 +33,24 @@ _As capturas usam o modo de demonstração do frontend; valores e endereços exi
 
 ## Compatibilidade e segurança
 
-O trainer é específico para a versão conhecida do executável `FSD-Win64-Shipping.exe`. Antes de acessar offsets ou executar rotinas nativas, o backend valida o SHA-256 do jogo. Se a build mudar, as operações são bloqueadas até que o perfil seja atualizado.
-
-Operações permanentes criam uma cópia dos saves em:
+O trainer resolve um perfil de build pelo SHA-256 do `FSD-Win64-Shipping.exe` antes de acessar qualquer offset ou executar qualquer rotina nativa. O status operacional aparece no cabeçalho:
 
 ```text
-FSD/Saved/SaveGames/DRGTrainerBackups/
+● GAME ATTACHED    ✓ BUILD VERIFIED
+FSD-Win64-Shipping.exe · PID 26248 · profile fsd-8e22e371
 ```
+
+Se a build mudar, o cabeçalho passa a mostrar `BUILD UNSUPPORTED` e todas as ações dependentes de memória ficam desabilitadas até que um perfil seja verificado — ver [docs/build-support.md](docs/build-support.md).
+
+Cada capacidade é verificada por build. Uma ação não verificada no perfil ativo permanece desabilitada e explica o motivo, em vez de tentar e falhar.
+
+Operações permanentes criam uma cópia dos saves antes de escrever:
+
+```text
+FSD/Saved/SaveGames/DRGTrainerBackups/<operação>-<timestamp>/
+```
+
+Backups nunca se sobrescrevem e nunca são removidos automaticamente. O procedimento de restauração está em [docs/save-restore.md](docs/save-restore.md).
 
 O objeto ativo de save e a arma equipada são resolvidos dinamicamente e revalidados antes do acesso. Ainda assim, este projeto modifica memória e progresso salvo: mantenha backups e prefira uso solo ou em sessões privadas.
 
@@ -65,6 +76,25 @@ npm install
 npm run tauri dev
 ```
 
+Para trabalho puramente visual, `npm run dev` sobe o frontend no browser com um backend simulado — sem o jogo e sem Tauri.
+
+Gates de qualidade (os mesmos do CI):
+
+```powershell
+npm run lint
+npm test -- --run
+npm run build
+```
+
+```powershell
+cd src-tauri
+cargo fmt --all -- --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+```
+
+`cargo test` passa com o jogo fechado. Testes que exigem o DRG em execução ficam atrás da feature `live-tests` — ver [docs/testing.md](docs/testing.md).
+
 Build de release:
 
 ```powershell
@@ -77,21 +107,34 @@ O executável será gerado em `src-tauri/target/release/drg-credits.exe`.
 
 ```text
 src/
-  components/trainer/       seções e componentes da interface
-  hooks/                    comportamento compartilhado
-  lib/                      bridge Tauri, mocks e formatação
-  types/                    contratos do frontend
+  App.tsx                   composition root
+  hooks/                    conexão, polling, ações e hotkeys
+  services/                 única fronteira invoke
+  state/                    estado observável do trainer
+  components/trainer/       seções e primitivas da interface
+  components/ui/            primitivas shadcn/Radix
+  lib/                      funções puras (erros, formatação)
+  types/                    contratos com o backend e semântica de ação
 src-tauri/src/
-  lib.rs                    comandos Tauri e hotkeys
-  memory.rs                 perfil da build e orquestração do backend
-  memory/
-    process.rs              acesso Win32 ao processo
-    unreal_runtime.rs       reflexão e objetos do Unreal Engine
-    save_reader.rs          leitura e resolução do FSDSaveGame
-    progression.rs          operações permanentes de progressão
-    resources.rs            inventário persistente
-    weapons.rs              recursos em tempo real das armas
+  app/                      comandos Tauri e atalhos globais
+  domain/                   regras do DRG (inventário, progressão, jogador, armas)
+  infrastructure/           Win32, runtime Unreal e transações de save
+  build_profiles/           dados específicos de cada build do jogo
+  shared/                   erros tipados e limites de segurança
 ```
+
+## Documentação
+
+| Documento | Para quê |
+| --- | --- |
+| [docs/architecture.md](docs/architecture.md) | Mapa das camadas e invariantes |
+| [docs/build-support.md](docs/build-support.md) | Suportar uma build nova do jogo |
+| [docs/testing.md](docs/testing.md) | Os três níveis de teste |
+| [docs/frontend-design.md](docs/frontend-design.md) | Contrato visual e tokens |
+| [docs/release.md](docs/release.md) | Pipeline, checksums e assinatura |
+| [docs/save-restore.md](docs/save-restore.md) | Backup e restauração |
+| [docs/adr/](docs/adr/) | Decisões arquiteturais duráveis |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Como contribuir |
 
 ## Aviso
 
